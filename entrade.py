@@ -174,6 +174,70 @@ class Broker:
             raise Exception(res.json())
         # print(f"Open deal status: {res.status_code}. ")
 
+    def close_all_orders(self):
+        url = "https://services.entrade.com.vn/entrade-api/derivative/orders?_start=1&_end=100&investorId=" + self.investorId
+        header = {
+            'User-Agent': USER_AGENT,
+            'ContentType': 'application/json',
+            'Authorization': 'Bearer ' + self.bearer_token
+        }
+
+        res = requests.get(url, headers=header)
+        if "data" in res.json():
+            orders = res.json()['data']
+            if len(orders) > 0:
+                for order in orders:
+                    if (order['orderStatus'] == 'new' or order['orderStatus'] == 'pending') and order['id']:
+                        self.cancel_order(order['id'])
+
+    def cancel_order(self, order_id):
+        url = "https://services.entrade.com.vn/entrade-api/derivative/orders/" + str(order_id)
+        header = {
+            'User-Agent': USER_AGENT,
+            'ContentType': 'application/json',
+            'Authorization': 'Bearer ' + self.bearer_token
+        }
+        try:
+            requests.delete(url, headers=header)
+        except:
+            print("Error while cancelling deal.")
+            exit()
+
+    def pull_deal_data(self):
+        url = 'https://services.entrade.com.vn/entrade-api/derivative/deals?_end=100&_start=1&investorId=' + self.investorId
+        header = {
+            'User-Agent': USER_AGENT,
+            'ContentType': 'application/json', 'Authorization': 'Bearer ' + self.bearer_token}
+
+        try:
+            x = requests.get(url, headers=header)
+        except:
+            print("Error while pulling deal.")
+            exit()
+        data = []
+        if "data" in x.json():
+            data = x.json()['data']
+        if len(data) > 0:
+            for deal in data:
+                self.number_of_deal += 1
+                if deal['status'] == 'ACTIVE' and deal['averageCostPrice']:
+                    self.number_of_stocks = int(deal['openQuantity'])
+                    self.entry_price = deal['averageCostPrice']
+                    self.deal_id = deal['id']
+                    entry_time = pd.to_datetime(deal['modifiedDate']) + pd.DateOffset(hours=7)
+                    entry_time = entry_time.strftime("%Y-%m-%d %H:%M:%S")
+                    self.entry_time = entry_time
+                    if deal['side'] == 'NB':
+                        self.is_long_open = True
+                    if deal['side'] == 'NS':
+                        self.is_short_open = True
+                    break
+        else:
+            self.number_of_stocks = 0
+            self.is_long_open = False
+            self.is_short_open = False
+            self.entry_time = ''
+
     def set_risk_reward(self):
         deal_id = self.deal_id
         risk = abs(self.entry_price - self.force_stoploss)
@@ -207,69 +271,6 @@ class Broker:
             print("Error(**) while setting stoploss & take profit.")
             exit()
 
-    def close_all_orders(self):
-        url = "https://services.entrade.com.vn/entrade-api/derivative/orders?_start=1&_end=100&investorId=" + self.investorId
-        header = {
-            'User-Agent': USER_AGENT,
-            'ContentType': 'application/json',
-            'Authorization': 'Bearer ' + self.bearer_token
-        }
-
-        res = requests.get(url, headers=header)
-        if "orders" in res.json():
-            orders = res.json()['orders']
-            if len(orders) > 0:
-                for order in orders:
-                    if order['orderStatus'] == 'New' and order['id']:
-                        self.cancel_order(order['id'])
-
-    def cancel_order(self, order_id):
-        url = "https://services.entrade.com.vn/entrade-api/derivative/orders/" + str(order_id)
-        header = {
-            'User-Agent': USER_AGENT,
-            'ContentType': 'application/json',
-            'Authorization': 'Bearer ' + self.bearer_token
-        }
-        try:
-            requests.delete(url, headers=header)
-        except:
-            print("Error while cancelling deal.")
-            exit()
-
-    def pull_deal_data(self):
-        url = 'https://services.entrade.com.vn/entrade-api/derivative/deals?_end=100&_start=1&investorId=' + self.investorId
-        header = {
-            'User-Agent': USER_AGENT,
-            'ContentType': 'application/json', 'Authorization': 'Bearer ' + self.bearer_token}
-
-        try:
-            x = requests.get(url, headers=header)
-        except:
-            print("Error while pulling deal.")
-            exit()
-        data = []
-        if "data" in x.json():
-            data = x.json()['data']
-        if len(data) > 0:
-            for deal in data:
-                self.number_of_deal += 1
-                if deal['status'] == 'OPEN' and deal['costPrice'] and deal['loanPackageId'] == self.loan_package_id:
-                    self.number_of_stocks = int(deal['openQuantity'])
-                    self.entry_price = deal['costPrice']
-                    self.deal_id = deal['id']
-                    entry_time = pd.to_datetime(deal['modifiedDate']) + pd.DateOffset(hours=7)
-                    entry_time = entry_time.strftime("%Y-%m-%d %H:%M:%S")
-                    self.entry_time = entry_time
-                    if deal['side'] == 'NB':
-                        self.is_long_open = True
-                    if deal['side'] == 'NS':
-                        self.is_short_open = True
-                    break
-        else:
-            self.number_of_stocks = 0
-            self.is_long_open = False
-            self.is_short_open = False
-            self.entry_time = ''
 
     def has_opened_deal(self):
         return True if self.number_of_stocks > 0 else False
