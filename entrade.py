@@ -51,9 +51,6 @@ class Broker:
         self.trigger = False
         self.logs = []
 
-    def set_loan_package_id(self, new_id):
-        self.loan_package_id = new_id
-
     def set_qty(self, new_qty):
         self.qty = new_qty
 
@@ -188,7 +185,6 @@ class Broker:
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json',
-            'Trading-Token': self.trading_token,
             'Authorization': 'Bearer ' + self.bearer_token
         }
 
@@ -212,7 +208,7 @@ class Broker:
             exit()
 
     def close_all_orders(self):
-        url = "https://services.entrade.com.vn/entrade-order-service/derivative/orders?accountNo=" + self.account_no
+        url = "https://services.entrade.com.vn/entrade-api/derivative/orders?_start=1&_end=100&investorId=" + self.investorId
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json',
@@ -227,23 +223,21 @@ class Broker:
                     if order['orderStatus'] == 'New' and order['id']:
                         self.cancel_order(order['id'])
 
-    def cancel_order(self, id):
-        url = "https://services.entrade.com.vn/entrade-order-service/derivative/orders/" + str(
-            id) + "?accountNo=" + self.account_no
+    def cancel_order(self, order_id):
+        url = "https://services.entrade.com.vn/entrade-api/derivative/orders/" + str(order_id)
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json',
-            'Trading-Token': self.trading_token,
             'Authorization': 'Bearer ' + self.bearer_token
         }
         try:
             requests.delete(url, headers=header)
         except:
-            print("Error while open deal.")
+            print("Error while cancelling deal.")
             exit()
 
     def pull_deal_data(self):
-        url = 'https://services.entrade.com.vn/entrade-derivative-core/deals?accountNo=' + self.account_no
+        url = 'https://services.entrade.com.vn/entrade-api/derivative/deals?_end=100&_start=1&investorId=' + self.investorId
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json', 'Authorization': 'Bearer ' + self.bearer_token}
