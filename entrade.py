@@ -175,7 +175,7 @@ class Broker:
         # print(f"Open deal status: {res.status_code}. ")
 
     def close_all_orders(self):
-        url = "https://services.entrade.com.vn/entrade-api/derivative/orders?_start=1&_end=100&investorId=" + self.investorId
+        url = "https://services.entrade.com.vn/entrade-api/derivative/orders?startIndex=1&endIndex=100&investorId=" + self.investorId
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json',
@@ -187,7 +187,7 @@ class Broker:
             orders = res.json()['data']
             if len(orders) > 0:
                 for order in orders:
-                    if (order['orderStatus'] == 'new' or order['orderStatus'] == 'pending') and order['id']:
+                    if (order['orderStatus'] == 'New' or order['orderStatus'] == 'Pending') and order['id']:
                         self.cancel_order(order['id'])
 
     def cancel_order(self, order_id):
@@ -204,7 +204,7 @@ class Broker:
             exit()
 
     def pull_deal_data(self):
-        url = 'https://services.entrade.com.vn/entrade-api/derivative/deals?_end=100&_start=1&investorId=' + self.investorId
+        url = 'https://services.entrade.com.vn/entrade-api/derivative/deals?endIndex=100&startIndex=1&investorId=' + self.investorId
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json', 'Authorization': 'Bearer ' + self.bearer_token}
