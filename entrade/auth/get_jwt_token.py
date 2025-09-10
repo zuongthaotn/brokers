@@ -1,6 +1,7 @@
 import requests
 from pathlib import Path
 import json
+from telegram_api import send_telegram_message
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36', 'ContentType': 'application/json'}
 ENTRADE_LOGIN_URL = 'https://services.entrade.com.vn/entrade-api/v2/auth'
@@ -31,3 +32,7 @@ if __name__ == "__main__":
         f = open(current_folder + "/jwt_token.txt", "w")
         f.write(bearer_token)
         f.close()
+        msg = "Today trading token is generated."
+        send_telegram_message(msg)
+    else:
+        raise Exception("Sorry, The requesting JWT token has problem!")
