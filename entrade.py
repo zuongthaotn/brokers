@@ -30,6 +30,7 @@ class Broker:
             raise Exception("Sorry, the DNSE account no not found!")
         else:
             self.investorId = data['entrade-auth']['account']['no']
+            self.investorAccountId = data['entrade-auth']['account']['account-id']
         self.do_date = ''
         self.number_of_stocks = 0
         self.entry_price = 0
@@ -239,30 +240,49 @@ class Broker:
             self.entry_time = ''
 
     def set_risk_reward(self):
+        self.set_risk()
+        self.set_reward()
+
+    def set_risk(self):
         deal_id = self.deal_id
-        risk = abs(self.entry_price - self.force_stoploss)
-        reward = abs(self.take_profit - self.entry_price)
-        if not deal_id or not risk or not reward:
+        if not deal_id or not self.take_profit or not self.force_stoploss:
             print("Error(*) while setting stoploss & take profit.")
             exit()
-        url = "https://services.entrade.com.vn/entrade-derivative-deal-risk/pnl-configs/" + str(deal_id)
+        url = "https://services.entrade.com.vn/entrade-api/risk_configs?investorAccountId=" + self.investorId
         header = {
             'User-Agent': USER_AGENT,
             'ContentType': 'application/json',
             'Authorization': 'Bearer ' + self.bearer_token
         }
-
         data = {
-            'takeProfitEnabled': True,
-            'stopLossEnabled': True,
-            'takeProfitStrategy': 'DELTA_PRICE',
-            'takeProfitOrderType': 'FASTEST',
-            'takeProfitDeltaPrice': reward,
-            'stopLossStrategy': 'DELTA_PRICE',
-            'stopLossOrderType': 'FASTEST',
-            'stopLossDeltaPrice': risk
+            'cutLossRate': 0.05,
+            'investorId': self.investorId,
+            'investorAccountId': self.investorAccountId,
+            'trailingEnabled': False
         }
+        try:
+            res = requests.patch(url, json=data, headers=header)
+            if res.status_code != 200:
+                print(res.json())
+        except:
+            print("Error(**) while setting stoploss & take profit.")
+            exit()
 
+    def set_reward(self):
+        deal_id = self.deal_id
+        if not deal_id or not self.take_profit or not self.force_stoploss:
+            print("Error(*) while setting stoploss & take profit.")
+            exit()
+        url = "https://services.entrade.com.vn/entrade-api/deal_risks"
+        header = {
+            'User-Agent': USER_AGENT,
+            'ContentType': 'application/json',
+            'Authorization': 'Bearer ' + self.bearer_token
+        }
+        data = {
+            'id': deal_id,
+            'takeProfitPrice': self.take_profit
+        }
         try:
             res = requests.post(url, json=data, headers=header)
             if res.status_code != 200:
@@ -270,7 +290,6 @@ class Broker:
         except:
             print("Error(**) while setting stoploss & take profit.")
             exit()
-
 
     def has_opened_deal(self):
         return True if self.number_of_stocks > 0 else False
