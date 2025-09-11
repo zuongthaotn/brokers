@@ -8,7 +8,7 @@ BANK_MARGIN_PORTFOLIO_ID = 123
 
 LONG_DEAL_TYPE = "NB"
 SHORT_DEAL_TYPE = "NS"
-TRADING_FEE = 0.3
+TRADING_FEE = 0.7
 
 
 class Broker:
@@ -240,8 +240,10 @@ class Broker:
             self.entry_time = ''
 
     def set_risk_reward(self):
-        self.set_risk()
-        self.set_reward()
+        return
+        # DNSE set stoploss by account
+        # self.set_risk()
+        # self.set_reward()
 
     def set_risk(self):
         deal_id = self.deal_id
