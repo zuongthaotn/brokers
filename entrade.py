@@ -156,18 +156,17 @@ class Broker:
             'ContentType': 'application/json',
             'Authorization': 'Bearer ' + self.bearer_token
         }
-
-        price = round(price, 1)
-
         data = {
             'symbol': self.symbol,
             'side': deal_type,
             'orderType': order_type,
-            'price': price,
             'quantity': self.qty,
             'bankMarginPortfolioId': self.bankMarginPortfolioId,
             'investorId': self.investorId
         }
+        if order_type != "MTL":
+            price = round(price, 1)
+            data['price'] = price
 
         res = requests.post(url, json=data, headers=header)
         if res.status_code != 200:
